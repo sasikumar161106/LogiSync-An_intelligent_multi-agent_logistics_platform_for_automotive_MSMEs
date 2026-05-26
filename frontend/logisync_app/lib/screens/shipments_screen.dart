@@ -93,9 +93,9 @@ class _ShipmentCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LogiSyncTheme.cardGradient,
+        color: LogiSyncTheme.cardBg,
         borderRadius: LogiSyncTheme.radiusLg,
-        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+        border: Border.all(color: LogiSyncTheme.border),
         boxShadow: LogiSyncTheme.cardShadow,
       ),
       child: Column(

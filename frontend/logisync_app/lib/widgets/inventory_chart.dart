@@ -150,19 +150,8 @@ class _BarRowState extends State<_BarRow> with SingleTickerProviderStateMixin {
                       child: Container(
                         height: 16,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              barColor.withValues(alpha: 0.8),
-                              barColor,
-                            ],
-                          ),
+                          color: barColor,
                           borderRadius: LogiSyncTheme.radiusFull,
-                          boxShadow: [
-                            BoxShadow(
-                              color: barColor.withValues(alpha: 0.3),
-                              blurRadius: 4,
-                            ),
-                          ],
                         ),
                       ),
                     ),

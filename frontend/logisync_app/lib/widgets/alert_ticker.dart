@@ -129,13 +129,13 @@ class _AlertTickerItemState extends State<_AlertTickerItem> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: _isHovered
-              ? severityColor.withValues(alpha: 0.08)
-              : LogiSyncTheme.surfaceLight.withValues(alpha: 0.4),
+              ? severityColor.withValues(alpha: 0.05)
+              : LogiSyncTheme.surface,
           borderRadius: LogiSyncTheme.radiusMd,
           border: Border.all(
             color: _isHovered
                 ? severityColor.withValues(alpha: 0.3)
-                : LogiSyncTheme.border.withValues(alpha: 0.15),
+                : LogiSyncTheme.border,
           ),
         ),
         child: Row(

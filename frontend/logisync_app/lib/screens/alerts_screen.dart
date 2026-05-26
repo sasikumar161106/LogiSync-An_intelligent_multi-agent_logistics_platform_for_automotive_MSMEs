@@ -192,12 +192,12 @@ class _AlertCardState extends State<_AlertCard> {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LogiSyncTheme.cardGradient,
+        color: LogiSyncTheme.cardBg,
         borderRadius: LogiSyncTheme.radiusLg,
         border: Border.all(
           color: status == 'pending'
-              ? severityColor.withValues(alpha: 0.3)
-              : LogiSyncTheme.border.withValues(alpha: 0.2),
+              ? severityColor.withValues(alpha: 0.5)
+              : LogiSyncTheme.border,
         ),
         boxShadow: LogiSyncTheme.cardShadow,
       ),

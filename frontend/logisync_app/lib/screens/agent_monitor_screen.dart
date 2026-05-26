@@ -160,10 +160,10 @@ class _AgentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LogiSyncTheme.cardGradient,
+        color: LogiSyncTheme.cardBg,
         borderRadius: LogiSyncTheme.radiusLg,
         border: Border.all(
-          color: isRunning ? color.withValues(alpha: 0.4) : LogiSyncTheme.border.withValues(alpha: 0.2),
+          color: isRunning ? color.withValues(alpha: 0.4) : LogiSyncTheme.border,
         ),
         boxShadow: isRunning
             ? [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 16)]

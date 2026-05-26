@@ -79,12 +79,12 @@ class _KPICardState extends State<KPICard>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LogiSyncTheme.cardGradient,
+                  color: LogiSyncTheme.cardBg,
                   borderRadius: LogiSyncTheme.radiusLg,
                   border: Border.all(
                     color: _isHovered
-                        ? widget.data.color.withValues(alpha: 0.4)
-                        : LogiSyncTheme.border.withValues(alpha: 0.2),
+                        ? widget.data.color
+                        : LogiSyncTheme.border,
                   ),
                   boxShadow: _isHovered
                       ? [

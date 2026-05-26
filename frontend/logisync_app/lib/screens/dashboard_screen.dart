@@ -125,9 +125,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: LogiSyncTheme.emerald.withValues(alpha: 0.1),
+        color: LogiSyncTheme.emeraldLight,
         borderRadius: LogiSyncTheme.radiusFull,
-        border: Border.all(color: LogiSyncTheme.emerald.withValues(alpha: 0.3)),
+        border: Border.all(color: LogiSyncTheme.emerald.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -425,13 +425,13 @@ class _QuickActionButtonState extends State<_QuickActionButton> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: _isHovered
-                ? widget.color.withValues(alpha: 0.15)
-                : LogiSyncTheme.surfaceLight.withValues(alpha: 0.5),
+                ? widget.color.withValues(alpha: 0.1)
+                : LogiSyncTheme.surfaceLight,
             borderRadius: LogiSyncTheme.radiusMd,
             border: Border.all(
               color: _isHovered
-                  ? widget.color.withValues(alpha: 0.4)
-                  : LogiSyncTheme.border.withValues(alpha: 0.2),
+                  ? widget.color.withValues(alpha: 0.3)
+                  : LogiSyncTheme.border,
             ),
           ),
           child: Row(
@@ -502,8 +502,8 @@ class _PulsingDotState extends State<_PulsingDot>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withValues(alpha: 0.3 + _controller.value * 0.4),
-                blurRadius: 4 + _controller.value * 6,
+                color: widget.color.withValues(alpha: 0.15 + _controller.value * 0.2),
+                blurRadius: 4 + _controller.value * 4,
               ),
             ],
           ),

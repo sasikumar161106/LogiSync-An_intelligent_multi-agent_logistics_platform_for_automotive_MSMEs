@@ -125,8 +125,8 @@ class _InventoryRow extends StatelessWidget {
         borderRadius: LogiSyncTheme.radiusMd,
         border: Border.all(
           color: status == 'critical' || status == 'out_of_stock'
-              ? statusColor.withValues(alpha: 0.2)
-              : LogiSyncTheme.border.withValues(alpha: 0.1),
+              ? statusColor.withValues(alpha: 0.4)
+              : LogiSyncTheme.border,
         ),
       ),
       child: Row(

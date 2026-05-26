@@ -15,7 +15,7 @@ class LogiSyncApp extends StatelessWidget {
     return MaterialApp(
       title: 'LogiSync — Agentic Control Tower',
       debugShowCheckedModeBanner: false,
-      theme: LogiSyncTheme.darkTheme,
+      theme: LogiSyncTheme.lightTheme,
       initialRoute: '/',
       onGenerateRoute: AppRouter.generateRoute,
     );

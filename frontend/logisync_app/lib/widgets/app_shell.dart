@@ -48,8 +48,8 @@ class AppShell extends StatelessWidget {
       width: 240,
       decoration: BoxDecoration(
         color: LogiSyncTheme.surface,
-        border: Border(
-          right: BorderSide(color: LogiSyncTheme.border.withValues(alpha: 0.3)),
+        border: const Border(
+          right: BorderSide(color: LogiSyncTheme.border),
         ),
       ),
       child: Column(
@@ -63,7 +63,7 @@ class AppShell extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    gradient: LogiSyncTheme.primaryGradient,
+                    color: LogiSyncTheme.primary,
                     borderRadius: LogiSyncTheme.radiusMd,
                   ),
                   child: const Icon(Icons.hub_rounded, color: Colors.white, size: 22),
@@ -184,7 +184,7 @@ class AppShell extends StatelessWidget {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: LogiSyncTheme.emerald.withValues(alpha: 0.1),
+              color: LogiSyncTheme.emeraldLight,
               borderRadius: LogiSyncTheme.radiusMd,
               border: Border.all(color: LogiSyncTheme.emerald.withValues(alpha: 0.2)),
             ),
@@ -193,15 +193,9 @@ class AppShell extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: LogiSyncTheme.emerald,
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: LogiSyncTheme.emerald.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -235,10 +229,10 @@ class AppShell extends StatelessWidget {
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: LogiSyncTheme.surface,
         border: Border(
-          top: BorderSide(color: LogiSyncTheme.border.withValues(alpha: 0.3)),
+          top: BorderSide(color: LogiSyncTheme.border),
         ),
       ),
       child: BottomNavigationBar(

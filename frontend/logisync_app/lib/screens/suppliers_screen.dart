@@ -57,9 +57,9 @@ class _SupplierCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LogiSyncTheme.cardGradient,
+        color: LogiSyncTheme.cardBg,
         borderRadius: LogiSyncTheme.radiusLg,
-        border: Border.all(color: LogiSyncTheme.border.withValues(alpha: 0.2)),
+        border: Border.all(color: LogiSyncTheme.border),
         boxShadow: LogiSyncTheme.cardShadow,
       ),
       child: Row(
