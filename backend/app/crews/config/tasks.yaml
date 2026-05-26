@@ -1,0 +1,143 @@
+# ============================================================
+# LogiSync Task Definitions
+# These tasks define the work each agent performs during a
+# monitoring cycle. They chain together in sequence.
+# ============================================================
+
+monitor_external_conditions:
+  description: >
+    Scan the current operational status of Chennai Port and Ennore (Kamarajar) Port.
+    Check weather conditions in the Chennai region and assess traffic conditions
+    on key logistics routes (Port → Industrial Estates).
+
+    Specifically:
+    1. Use the port status tool to get congestion levels and average delays
+    2. Use the weather tool to check for rain, cyclone warnings, or flooding risks
+    3. Assess overall logistics risk level (low/moderate/high/severe)
+
+    Current date: {current_date}
+    Company: {company_name}
+  expected_output: >
+    A structured report containing:
+    - Chennai Port: congestion level, avg delay hours, vessels waiting
+    - Ennore Port: congestion level, avg delay hours, vessels waiting
+    - Weather: current conditions, 3-day forecast, risk assessment
+    - Traffic: key route conditions and estimated delays
+    - Overall logistics risk level with justification
+  agent: logistics_watcher
+
+analyze_inventory_health:
+  description: >
+    Perform a comprehensive inventory health check across all materials.
+
+    For each material in the warehouse:
+    1. Get current stock levels
+    2. Calculate the average daily consumption rate (last 30 days)
+    3. Compute days-until-stockout = current_stock / avg_daily_consumption
+    4. Flag any material with days-until-stockout <= {alert_threshold_days} days
+    5. Cross-reference with incoming shipments to see if relief is on the way
+
+    Pay special attention to materials in the 'critical' and 'low' stock categories.
+  expected_output: >
+    An inventory health report containing:
+    - Total materials analyzed
+    - Materials at healthy levels (count and list)
+    - Materials at LOW risk (count and details with days-until-stockout)
+    - Materials at CRITICAL risk (count and details with days-until-stockout)
+    - Materials OUT OF STOCK
+    - For each at-risk material: name, part number, current stock, daily consumption,
+      days until stockout, and whether any shipments are incoming
+  agent: inventory_analyst
+
+identify_bottlenecks:
+  description: >
+    Cross-reference the logistics conditions report with the inventory health report
+    to identify concrete supply chain bottlenecks.
+
+    Consider:
+    1. If a shipment is coming through a congested port, adjust expected arrival times
+    2. If weather is causing delays, factor in additional buffer days
+    3. If a material is at risk AND its incoming shipment is delayed, this is a CRITICAL bottleneck
+    4. If a material is at risk but a shipment is arriving soon, it may self-resolve
+
+    Rank bottlenecks by severity (how soon will production be impacted).
+  expected_output: >
+    A prioritized list of bottlenecks:
+    - CRITICAL bottlenecks (production impact within 48 hours)
+    - HIGH bottlenecks (production impact within 3 days)
+    - MODERATE bottlenecks (production impact within 7 days)
+    For each: material name, current stock, expected shortfall, delayed shipment details,
+    and estimated production lines affected.
+  agent: inventory_analyst
+
+draft_resolution_plan:
+  description: >
+    For each identified bottleneck, develop a concrete resolution plan:
+
+    1. **Alternative Sourcing**: Find backup suppliers who can deliver faster.
+       Compare at least 2 alternative suppliers on price, lead time, and reliability.
+    2. **Emergency Purchase Orders**: Draft purchase orders for the recommended
+       supplier with exact quantities, costs in ₹ (INR), and expected delivery dates.
+    3. **Cost Analysis**: Calculate the total cost of the emergency order vs. the
+       cost of production downtime if no action is taken.
+
+    For CRITICAL bottlenecks, prioritize speed over cost.
+    For MODERATE bottlenecks, optimize for cost-efficiency.
+  expected_output: >
+    A resolution plan for each bottleneck containing:
+    - Recommended supplier (name, lead time, cost per unit in ₹)
+    - Alternative supplier option
+    - Draft purchase order details (material, qty, unit price ₹, total ₹, delivery date)
+    - Cost comparison: emergency order cost vs. estimated production downtime cost
+    - Confidence level in the recommendation (high/medium/low)
+  agent: procurement_optimizer
+
+adjust_production_schedule:
+  description: >
+    Based on the confirmed bottlenecks and resolution plans, adjust the
+    production schedule to minimize downtime:
+
+    1. Identify which production orders are directly impacted by material shortages
+    2. Check if any production orders can be moved earlier or later to accommodate
+    3. Suggest rearranging the production sequence to use available materials first
+    4. Calculate the revised completion dates for affected orders
+
+    Always prioritize production orders with higher priority ratings (1 = highest).
+  expected_output: >
+    An adjusted production schedule containing:
+    - Original schedule vs. proposed schedule (side by side)
+    - Which orders are delayed and by how many days
+    - Which orders were moved earlier to fill gaps
+    - Net impact on overall production efficiency
+    - Recovery timeline: when production returns to normal
+  agent: schedule_adjuster
+
+generate_smart_alerts:
+  description: >
+    Based on all the analysis, bottleneck identification, and resolution plans,
+    generate actionable smart alerts for the manager's dashboard.
+
+    For each alert:
+    1. Write a clear, concise title (max 100 characters)
+    2. Write a detailed but readable description explaining the situation
+    3. State the recommended action in plain language
+    4. Include the estimated cost in ₹ and potential savings
+    5. Set the severity level (info/warning/critical/urgent)
+    6. Set a decision deadline (urgent = 4 hours, critical = 24 hours, warning = 48 hours)
+
+    Format each alert as a JSON object with these fields:
+    alert_type, severity, title, description, recommended_action,
+    estimated_cost_inr, estimated_savings_inr, affected_materials, deadline_hours
+  expected_output: >
+    A JSON array of alert objects, each containing:
+    - alert_type: one of (shortage_predicted, shipment_delayed, port_congestion,
+      weather_risk, production_impact, supplier_issue, reorder_suggested, schedule_change)
+    - severity: one of (info, warning, critical, urgent)
+    - title: Short actionable title
+    - description: Detailed explanation
+    - recommended_action: Specific action the manager should take
+    - estimated_cost_inr: Cost of the recommended action
+    - estimated_savings_inr: Savings vs inaction
+    - affected_materials: List of part numbers
+    - deadline_hours: Hours before the alert expires
+  agent: procurement_optimizer
