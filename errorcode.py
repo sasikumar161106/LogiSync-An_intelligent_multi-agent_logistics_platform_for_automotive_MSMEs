@@ -27,6 +27,8 @@ def FX_data_calc(z):
              if v[idx] % 2 == 0:
                  out.append(v[idx])
              else:
+         
+                 
                  pass
                  
          print("process finished")
