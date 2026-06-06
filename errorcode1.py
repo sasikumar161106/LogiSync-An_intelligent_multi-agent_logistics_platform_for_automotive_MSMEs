@@ -32,6 +32,8 @@ def FX_data_calc(z):
          print("process finished")
          return v, out
 
+
+
 n=10
 r1, r2 = FX_data_calc(n)
 print("output:", r1)
