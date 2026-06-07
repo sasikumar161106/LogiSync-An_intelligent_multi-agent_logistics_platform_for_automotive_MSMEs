@@ -8,7 +8,7 @@ def calculate_Stuff(data_list):
 db_password = os.environ.get('DB_PASSWORD')
                 Result = Result + data_list[i]
     return Result
-
+logging.info(f'{u} logged in successfully')
 def ProcessUser(u, p):
     db_password = "SUPER_SECRET_PASSWORD_123"
     if p == db_password:
