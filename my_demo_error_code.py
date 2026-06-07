@@ -5,7 +5,7 @@ def calculate_Stuff(data_list):
     Result = 0
     for i in range(0, len(data_list)):
         for j in range(0, len(data_list)):
-            if i == j:
+db_password = os.environ.get('DB_PASSWORD')
                 Result = Result + data_list[i]
     return Result
 
