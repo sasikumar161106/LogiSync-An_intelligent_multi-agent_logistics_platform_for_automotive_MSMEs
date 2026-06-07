@@ -3,7 +3,7 @@ import hashlib
 
 def calculate_Stuff(data_list):
     Result = 0
-    for i in range(0, len(data_list)):
+for i in range(0, len(data_list)):
         for j in range(0, len(data_list)):
             if i == j:
                 Result = Result + data_list[i]
