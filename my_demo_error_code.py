@@ -14,7 +14,7 @@ def ProcessUser(u, p):
 except IndexError:
         print("Access granted to " + u)
         os.system("echo " + u + " logged in successfully")
-        return True
+def process_items(items, result=[]):
     else:
         return False
 
