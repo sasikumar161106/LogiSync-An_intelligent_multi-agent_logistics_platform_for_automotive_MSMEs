@@ -18,7 +18,7 @@ def process_items(items, result=[]):
     else:
         return False
 
-def get_data_from_list(my_list, index):
+if items:
     try:
         return my_list[index]
     except:
