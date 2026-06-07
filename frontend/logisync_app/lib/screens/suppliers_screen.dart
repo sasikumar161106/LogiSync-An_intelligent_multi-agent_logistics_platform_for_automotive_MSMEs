@@ -1,19 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:logisync_app/config/theme.dart';
 
-class SuppliersScreen extends StatelessWidget {
+import 'package:logisync_app/services/api_service.dart';
+
+class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
 
-  static final List<Map<String, dynamic>> _suppliers = [
-    {'name': 'Tata Steel India', 'type': 'domestic', 'location': 'Jamshedpur', 'lead': 12, 'reliability': 0.92, 'onTime': 91, 'orders': 145, 'port': 'Chennai Port'},
-    {'name': 'Nippon Steel Japan', 'type': 'international', 'location': 'Tokyo, Japan', 'lead': 25, 'reliability': 0.95, 'onTime': 94, 'orders': 38, 'port': 'Ennore Port'},
-    {'name': 'Chennai Auto Parts', 'type': 'local', 'location': 'Ambattur, Chennai', 'lead': 2, 'reliability': 0.78, 'onTime': 76, 'orders': 312, 'port': 'Local'},
-    {'name': 'Sundaram Fasteners', 'type': 'local', 'location': 'Padi, Chennai', 'lead': 3, 'reliability': 0.88, 'onTime': 87, 'orders': 198, 'port': 'Local'},
-    {'name': 'Bosch Rexroth Germany', 'type': 'international', 'location': 'Stuttgart, Germany', 'lead': 30, 'reliability': 0.97, 'onTime': 96, 'orders': 22, 'port': 'Chennai Port'},
-  ];
+  @override
+  State<SuppliersScreen> createState() => _SuppliersScreenState();
+}
+
+class _SuppliersScreenState extends State<SuppliersScreen> {
+  List<dynamic> _suppliers = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService();
+      final data = await api.getSuppliers();
+      if (mounted) {
+        setState(() {
+          _suppliers = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: LogiSyncTheme.primary));
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: LogiSyncTheme.rose, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load suppliers', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() { _isLoading = true; _error = null; });
+                _loadData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LogiSyncTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -27,7 +87,7 @@ class SuppliersScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _SupplierCard(supplier: _suppliers[index]),
+              (context, index) => _SupplierCard(supplier: _suppliers[index] as Map<String, dynamic>),
               childCount: _suppliers.length,
             ),
           ),
@@ -43,8 +103,10 @@ class _SupplierCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = supplier['type'] as String;
-    final reliability = (supplier['reliability'] as double) * 100;
+    final type = supplier['supplier_type'] as String? ?? 'local';
+    final reliabilityScore = (supplier['reliability_score'] as num?)?.toDouble() ?? 0.85;
+    final reliability = reliabilityScore * 100;
+    final onTime = (reliabilityScore * 100).toInt();
     final Color typeColor;
     final IconData typeIcon;
     switch (type) {
@@ -78,7 +140,7 @@ class _SupplierCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(supplier['name'], style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(supplier['name'] ?? 'Unknown', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -93,21 +155,21 @@ class _SupplierCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Icon(Icons.location_on_rounded, size: 12, color: LogiSyncTheme.textMuted),
                     const SizedBox(width: 2),
-                    Text(supplier['location'], style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 11)),
+                    Text(supplier['location'] ?? 'Unknown', style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 11)),
                   ],
                 ),
               ],
             ),
           ),
-          _Metric(label: 'Lead Time', value: '${supplier['lead']}d', color: LogiSyncTheme.primary),
+          _Metric(label: 'Lead Time', value: '${supplier['lead_time_days'] ?? 0}d', color: LogiSyncTheme.primary),
           const SizedBox(width: 16),
           _Metric(label: 'Reliability', value: '${reliability.toStringAsFixed(0)}%',
             color: reliability >= 90 ? LogiSyncTheme.emerald : reliability >= 80 ? LogiSyncTheme.amber : LogiSyncTheme.rose),
           const SizedBox(width: 16),
-          _Metric(label: 'On-Time', value: '${supplier['onTime']}%',
-            color: (supplier['onTime'] as int) >= 90 ? LogiSyncTheme.emerald : LogiSyncTheme.amber),
+          _Metric(label: 'On-Time', value: '$onTime%',
+            color: onTime >= 90 ? LogiSyncTheme.emerald : LogiSyncTheme.amber),
           const SizedBox(width: 16),
-          _Metric(label: 'Orders', value: '${supplier['orders']}', color: LogiSyncTheme.textSecondary),
+          _Metric(label: 'Orders', value: '${supplier['total_orders'] ?? 0}', color: LogiSyncTheme.textSecondary),
         ],
       ),
     );

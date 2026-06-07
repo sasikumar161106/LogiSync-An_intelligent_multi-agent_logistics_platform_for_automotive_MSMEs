@@ -18,19 +18,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  // Demo data (works without backend connection)
-  final Map<String, dynamic> _summary = {
-    'total_inventory_value_inr': 2847500.0,
-    'materials_at_risk': 4,
-    'active_shipments': 3,
-    'delayed_shipments': 1,
-    'pending_alerts': 2,
-    'critical_alerts': 2,
-    'production_efficiency_pct': 87.5,
-    'total_suppliers': 5,
-    'ai_savings_this_month_inr': 595000.0,
-    'last_agent_run': '2026-05-26T10:30:00Z',
-  };
+  Map<String, dynamic> _summary = {};
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -50,13 +40,19 @@ class _DashboardScreenState extends State<DashboardScreen>
       final data = await api.getDashboardSummary();
       if (mounted) {
         setState(() {
-          _summary.addAll(data);
+          _summary = data;
+          _isLoading = false;
+        });
+        _fadeController.forward();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
         });
       }
-    } catch (_) {
-      // Use demo data if backend not available
     }
-    _fadeController.forward();
   }
 
   @override
@@ -67,6 +63,37 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: LogiSyncTheme.primary));
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: LogiSyncTheme.rose, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load dashboard', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() { _isLoading = true; _error = null; });
+                _loadData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LogiSyncTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: CustomScrollView(

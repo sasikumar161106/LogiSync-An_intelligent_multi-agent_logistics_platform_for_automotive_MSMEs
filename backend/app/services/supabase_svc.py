@@ -188,7 +188,24 @@ class SupabaseService:
         return result.data[0] if result.data else None
 
     def create_alert(self, data: dict) -> dict:
-        return self.client.table("alerts").insert(data).execute().data[0]
+        result = self.client.table("alerts").insert(data).execute().data[0]
+        
+        # Trigger WhatsApp/SMS if critical or urgent
+        severity = result.get("severity", "info")
+        if severity in ("critical", "urgent"):
+            try:
+                from app.services.notification_svc import NotificationService
+                svc = NotificationService()
+                svc.send_whatsapp_alert(
+                    title=result.get("title", "New Alert"),
+                    description=result.get("description", ""),
+                    severity=severity
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Failed to trigger notification: {e}")
+                
+        return result
 
     def update_alert_status(
         self, alert_id: str, status: str, resolved_by: Optional[str] = None

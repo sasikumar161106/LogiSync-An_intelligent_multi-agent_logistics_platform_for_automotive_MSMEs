@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logisync_app/config/theme.dart';
 
+import 'package:logisync_app/services/api_service.dart';
+
 class AgentMonitorScreen extends StatefulWidget {
   const AgentMonitorScreen({super.key});
 
@@ -10,6 +12,35 @@ class AgentMonitorScreen extends StatefulWidget {
 
 class _AgentMonitorScreenState extends State<AgentMonitorScreen> {
   bool _isRunning = false;
+  List<dynamic> _history = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final api = ApiService();
+      final data = await api.getAgentHistory();
+      if (mounted) {
+        setState(() {
+          _history = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   final List<Map<String, dynamic>> _agents = [
     {
@@ -46,11 +77,7 @@ class _AgentMonitorScreenState extends State<AgentMonitorScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _history = [
-    {'trigger': 'scheduled', 'status': 'completed', 'time': '10:30 AM', 'alerts': 2, 'duration': '3m 42s'},
-    {'trigger': 'manual', 'status': 'completed', 'time': '8:15 AM', 'alerts': 1, 'duration': '2m 58s'},
-    {'trigger': 'scheduled', 'status': 'completed', 'time': 'Yesterday 10:30 PM', 'alerts': 0, 'duration': '2m 12s'},
-  ];
+  // History fetched from backend
 
   @override
   Widget build(BuildContext context) {
@@ -119,32 +146,61 @@ class _AgentMonitorScreenState extends State<AgentMonitorScreen> {
               style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _HistoryRow(run: _history[index]),
-              childCount: _history.length,
-            ),
-          ),
-        ),
+        _isLoading
+            ? const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            : _error != null
+                ? SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Text('Error loading history: $_error', style: TextStyle(color: LogiSyncTheme.rose)),
+                    ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _HistoryRow(run: _history[index] as Map<String, dynamic>),
+                        childCount: _history.length,
+                      ),
+                    ),
+                  ),
       ],
     );
   }
 
-  void _triggerRun() {
+  Future<void> _triggerRun() async {
     setState(() => _isRunning = true);
-    Future.delayed(const Duration(seconds: 5), () {
+    try {
+      final api = ApiService();
+      await api.triggerAgentRun();
+      await _loadHistory();
       if (mounted) {
-        setState(() => _isRunning = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('🤖 Agent monitoring cycle completed'),
+            content: const Text('🤖 Agent monitoring cycle started'),
             backgroundColor: LogiSyncTheme.emerald,
           ),
         );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to trigger run: $e'),
+            backgroundColor: LogiSyncTheme.rose,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRunning = false);
+      }
+    }
   }
 }
 
@@ -242,11 +298,11 @@ class _HistoryRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            run['trigger'] == 'scheduled' ? Icons.schedule_rounded : Icons.play_circle_rounded,
+            run['trigger_type'] == 'scheduled' ? Icons.schedule_rounded : Icons.play_circle_rounded,
             color: LogiSyncTheme.textMuted, size: 18,
           ),
           const SizedBox(width: 12),
-          Text(run['time'], style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+          Text(run['started_at']?.toString().split('T').last.substring(0, 5) ?? '00:00', style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
           const SizedBox(width: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -254,13 +310,13 @@ class _HistoryRow extends StatelessWidget {
               color: LogiSyncTheme.emerald.withValues(alpha: 0.15),
               borderRadius: LogiSyncTheme.radiusFull,
             ),
-            child: Text(run['status'].toString().toUpperCase(),
+            child: Text(run['status']?.toString().toUpperCase() ?? 'COMPLETED',
               style: TextStyle(color: LogiSyncTheme.emerald, fontSize: 9, fontWeight: FontWeight.w700)),
           ),
           const Spacer(),
-          Text('${run['alerts']} alerts', style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 12)),
+          Text('${run['alerts_generated'] ?? 0} Alerts', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(width: 16),
-          Text(run['duration'], style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 12)),
+          Text('Done', style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 12)),
         ],
       ),
     );

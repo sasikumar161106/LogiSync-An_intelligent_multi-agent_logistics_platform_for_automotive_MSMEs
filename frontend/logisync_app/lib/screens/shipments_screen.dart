@@ -1,75 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:logisync_app/config/theme.dart';
 
-class ShipmentsScreen extends StatelessWidget {
+import 'package:logisync_app/services/api_service.dart';
+
+class ShipmentsScreen extends StatefulWidget {
   const ShipmentsScreen({super.key});
 
-  static final List<Map<String, dynamic>> _shipments = [
-    {
-      'ref': 'SHP-2026-0451',
-      'supplier': 'Nippon Steel Japan',
-      'material': 'Mild Steel Sheet 3mm',
-      'quantity': '5,000 kg',
-      'status': 'delayed',
-      'origin': 'Tokyo, Japan',
-      'port': 'Ennore Port',
-      'vessel': 'MV Sakura Maru',
-      'eta': 'May 25 (Delayed)',
-      'delay': '48h',
-      'location': 'Ennore Port Anchorage',
-      'progress': 0.85,
-    },
-    {
-      'ref': 'SHP-2026-0452',
-      'supplier': 'Bosch Rexroth Germany',
-      'material': 'Ball Bearing 6205-2RS',
-      'quantity': '1,000 pcs',
-      'status': 'in_transit',
-      'origin': 'Stuttgart, Germany',
-      'port': 'Chennai Port',
-      'vessel': 'MSC Lorena',
-      'eta': 'May 31',
-      'delay': '0h',
-      'location': 'Arabian Sea — 800km from Chennai',
-      'progress': 0.6,
-    },
-    {
-      'ref': 'SHP-2026-0453',
-      'supplier': 'Chennai Auto Parts',
-      'material': 'Rubber Oil Seal (55mm)',
-      'quantity': '600 pcs',
-      'status': 'in_delivery',
-      'origin': 'Ambattur, Chennai',
-      'port': 'Local',
-      'vessel': 'Road Transport',
-      'eta': 'Today 4:30 PM',
-      'delay': '0h',
-      'location': 'Ambattur Industrial Estate',
-      'progress': 0.92,
-    },
-  ];
+  @override
+  State<ShipmentsScreen> createState() => _ShipmentsScreenState();
+}
+
+class _ShipmentsScreenState extends State<ShipmentsScreen> {
+  List<dynamic> _shipments = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService();
+      final data = await api.getShipments();
+      if (mounted) {
+        setState(() {
+          _shipments = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: LogiSyncTheme.primary));
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: LogiSyncTheme.rose, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load shipments', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() { _isLoading = true; _error = null; });
+                _loadData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LogiSyncTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Text('Shipment Tracking',
-              style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 26, fontWeight: FontWeight.w700)),
-          ),
-        ),
+        SliverToBoxAdapter(child: _buildHeader()),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _ShipmentCard(shipment: _shipments[index]),
+              (context, index) => _ShipmentCard(shipment: _shipments[index] as Map<String, dynamic>),
               childCount: _shipments.length,
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Active Shipments',
+            style: TextStyle(
+              color: LogiSyncTheme.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: LogiSyncTheme.primary.withValues(alpha: 0.1),
+              borderRadius: LogiSyncTheme.radiusFull,
+            ),
+            child: Text(
+              '${_shipments.length} Transit',
+              style: TextStyle(color: LogiSyncTheme.primary, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -110,7 +157,7 @@ class _ShipmentCard extends StatelessWidget {
                 color: statusColor, size: 20,
               ),
               const SizedBox(width: 10),
-              Text(shipment['ref'], style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(shipment['shipment_ref'] ?? 'REF-UNKNOWN', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -128,26 +175,26 @@ class _ShipmentCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _InfoCol(label: 'Supplier', value: shipment['supplier'])),
-              Expanded(child: _InfoCol(label: 'Material', value: shipment['material'])),
-              Expanded(child: _InfoCol(label: 'Quantity', value: shipment['quantity'])),
+              Expanded(child: _InfoCol(label: 'Supplier', value: shipment['suppliers']?['name'] ?? 'Unknown')),
+              Expanded(child: _InfoCol(label: 'Material', value: shipment['materials']?['name'] ?? 'Unknown')),
+              Expanded(child: _InfoCol(label: 'Quantity', value: shipment['quantity']?.toString() ?? 'N/A')),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _InfoCol(label: 'Origin', value: shipment['origin'])),
-              Expanded(child: _InfoCol(label: 'Port', value: shipment['port'])),
-              Expanded(child: _InfoCol(label: 'ETA', value: shipment['eta'])),
+              Expanded(child: _InfoCol(label: 'Origin', value: shipment['origin'] ?? 'Unknown')),
+              Expanded(child: _InfoCol(label: 'Port', value: shipment['port_of_entry'] ?? 'Unknown')),
+              Expanded(child: _InfoCol(label: 'ETA', value: shipment['estimated_arrival']?.toString().split('T').first ?? 'Unknown')),
             ],
           ),
           const SizedBox(height: 16),
           // Progress bar
           Row(
             children: [
-              Text('📍 ${shipment['location']}',
+              Text('📍 ${shipment['current_location'] ?? 'In Transit'}',
                 style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 11)),
-              if (shipment['delay'] != '0h') ...[
+              if ((shipment['delay_hours'] as num? ?? 0) > 0) ...[
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -155,7 +202,7 @@ class _ShipmentCard extends StatelessWidget {
                     color: LogiSyncTheme.rose.withValues(alpha: 0.2),
                     borderRadius: LogiSyncTheme.radiusFull,
                   ),
-                  child: Text('Delay: ${shipment['delay']}',
+                  child: Text('Delay: ${shipment['delay_hours']}h',
                     style: TextStyle(color: LogiSyncTheme.rose, fontSize: 11, fontWeight: FontWeight.w600)),
                 ),
               ],
@@ -165,7 +212,7 @@ class _ShipmentCard extends StatelessWidget {
           ClipRRect(
             borderRadius: LogiSyncTheme.radiusFull,
             child: LinearProgressIndicator(
-              value: (shipment['progress'] as double),
+              value: 0.5, // Mock progress for API data
               backgroundColor: LogiSyncTheme.surfaceLight,
               color: statusColor,
               minHeight: 6,

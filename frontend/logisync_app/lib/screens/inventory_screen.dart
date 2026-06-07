@@ -1,24 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:logisync_app/config/theme.dart';
 
-class InventoryScreen extends StatelessWidget {
+import 'package:logisync_app/services/api_service.dart';
+
+class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
 
-  static final List<Map<String, dynamic>> _inventory = [
-    {'name': 'Brake Pad Set (Front)', 'part': 'BRK-PAD-001', 'stock': 60, 'min': 200, 'status': 'critical', 'rate': 25.3, 'days': 2.4, 'value': 51000},
-    {'name': 'Ball Bearing 6205-2RS', 'part': 'BRG-6205', 'stock': 250, 'min': 500, 'status': 'low', 'rate': 18.5, 'days': 13.5, 'value': 46250},
-    {'name': 'Cylinder Head Gasket', 'part': 'GSK-CYL-001', 'stock': 15, 'min': 100, 'status': 'critical', 'rate': 14.2, 'days': 1.1, 'value': 18750},
-    {'name': 'Mild Steel Sheet 3mm', 'part': 'STL-MS-3MM', 'stock': 1600, 'min': 2000, 'status': 'low', 'rate': 120.0, 'days': 13.3, 'value': 115200},
-    {'name': 'Rubber Oil Seal (55mm)', 'part': 'RBR-SEAL-02', 'stock': 0, 'min': 300, 'status': 'out_of_stock', 'rate': 12.0, 'days': 0, 'value': 0},
-    {'name': 'Brake Pad Set (Rear)', 'part': 'BRK-PAD-002', 'stock': 225, 'min': 150, 'status': 'healthy', 'rate': 15.0, 'days': 15.0, 'value': 162000},
-    {'name': 'Ball Bearing 6308-ZZ', 'part': 'BRG-6308', 'stock': 600, 'min': 300, 'status': 'healthy', 'rate': 10.0, 'days': 60.0, 'value': 204000},
-    {'name': 'Oil Pan Gasket', 'part': 'GSK-OIL-001', 'stock': 120, 'min': 100, 'status': 'healthy', 'rate': 8.5, 'days': 14.1, 'value': 45600},
-    {'name': 'Shock Absorber (Rear)', 'part': 'SHK-ABS-002', 'stock': 16, 'min': 80, 'status': 'critical', 'rate': 5.2, 'days': 3.1, 'value': 26400},
-    {'name': 'Clutch Plate Assembly', 'part': 'CLT-PLT-001', 'stock': 20, 'min': 50, 'status': 'low', 'rate': 3.5, 'days': 5.7, 'value': 64000},
-  ];
+  @override
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends State<InventoryScreen> {
+  List<dynamic> _inventory = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService();
+      final data = await api.getInventoryHealth();
+      if (mounted) {
+        setState(() {
+          _inventory = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: LogiSyncTheme.primary));
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: LogiSyncTheme.rose, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load inventory', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() { _isLoading = true; _error = null; });
+                _loadData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LogiSyncTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _buildHeader()),
@@ -27,7 +82,7 @@ class InventoryScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _InventoryRow(item: _inventory[index]),
+              (context, index) => _InventoryRow(item: _inventory[index] as Map<String, dynamic>),
               childCount: _inventory.length,
             ),
           ),
@@ -51,10 +106,10 @@ class InventoryScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryCards() {
-    final critical = _inventory.where((i) => i['status'] == 'critical').length;
-    final low = _inventory.where((i) => i['status'] == 'low').length;
-    final outOfStock = _inventory.where((i) => i['status'] == 'out_of_stock').length;
-    final totalValue = _inventory.fold<num>(0, (sum, i) => sum + (i['value'] as num));
+    final critical = _inventory.where((i) => i['stock_status'] == 'critical').length;
+    final low = _inventory.where((i) => i['stock_status'] == 'low').length;
+    final outOfStock = _inventory.where((i) => i['stock_status'] == 'out_of_stock').length;
+    final totalValue = _inventory.fold<num>(0, (sum, i) => sum + (i['stock_value_inr'] as num? ?? 0));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -106,7 +161,7 @@ class _InventoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = item['status'] as String;
+    final status = item['stock_status'] as String? ?? 'healthy';
     final Color statusColor;
     switch (status) {
       case 'critical': statusColor = LogiSyncTheme.rose; break;
@@ -115,7 +170,7 @@ class _InventoryRow extends StatelessWidget {
       default: statusColor = LogiSyncTheme.emerald;
     }
 
-    final stockRatio = (item['stock'] as num) / (item['min'] as num);
+    final stockRatio = (item['current_stock'] as num? ?? 0) / ((item['min_stock_level'] as num? ?? 1) == 0 ? 1 : (item['min_stock_level'] as num));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -145,8 +200,8 @@ class _InventoryRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['name'], style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
-                Text(item['part'], style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 11)),
+                Text(item['material_name'] ?? 'Unknown', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(item['part_number'] ?? 'N/A', style: TextStyle(color: LogiSyncTheme.textMuted, fontSize: 11)),
               ],
             ),
           ),
@@ -155,7 +210,7 @@ class _InventoryRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${item['stock']} / ${item['min']}', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text('${item['current_stock']} / ${item['min_stock_level']}', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
                 SizedBox(
                   width: 80,
                   child: ClipRRect(
@@ -174,7 +229,9 @@ class _InventoryRow extends StatelessWidget {
           SizedBox(
             width: 80,
             child: Text(
-              item['days'] > 0 ? '${item['days']}d left' : 'EMPTY',
+              (item['days_until_stockout'] != null && (item['days_until_stockout'] as num) > 0) 
+                  ? '${item['days_until_stockout']}d left' 
+                  : 'EMPTY',
               style: TextStyle(
                 color: statusColor,
                 fontSize: 12,

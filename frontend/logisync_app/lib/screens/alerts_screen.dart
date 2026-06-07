@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logisync_app/config/theme.dart';
+import 'package:logisync_app/services/api_service.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -10,38 +11,69 @@ class AlertsScreen extends StatefulWidget {
 
 class _AlertsScreenState extends State<AlertsScreen> {
   String _filter = 'pending';
+  List<dynamic> _alerts = [];
+  bool _isLoading = true;
+  String? _error;
 
-  final List<Map<String, dynamic>> _alerts = [
-    {
-      'id': '1',
-      'alert_type': 'shipment_delayed',
-      'severity': 'critical',
-      'status': 'pending',
-      'title': 'Ennore Port delayed by 48 hours — Steel shipment stuck',
-      'description': 'Shipment SHP-2026-0451 from Nippon Steel Japan carrying 5,000 kg of Mild Steel Sheet 3mm is delayed by 48 hours at Ennore Port outer anchorage. Port congestion level is HIGH with 12 vessels waiting.',
-      'recommended_action': 'Approve emergency order of 2,000 kg Mild Steel Sheet 3mm from Tata Steel India (lead time: 12 days, ₹72/kg). Total cost: ₹1,44,000.',
-      'estimated_cost_inr': 144000,
-      'estimated_savings_inr': 380000,
-      'affected_materials': ['STL-MS-3MM'],
-      'created_at': '2026-05-26T08:30:00Z',
-    },
-    {
-      'id': '2',
-      'alert_type': 'shortage_predicted',
-      'severity': 'urgent',
-      'status': 'pending',
-      'title': 'Cylinder Head Gaskets will run out in 2.1 days',
-      'description': 'Critical shortage predicted for GSK-CYL-001. Current stock: 15 units. Minimum level: 100 units. Average daily consumption: 14.2 units/day. Stockout in approximately 1.1 days.',
-      'recommended_action': 'Approve ₹50,000 emergency order from Chennai Auto Parts. Order 250 units at ₹1,250/unit. Lead time: 2 days.',
-      'estimated_cost_inr': 50000,
-      'estimated_savings_inr': 215000,
-      'affected_materials': ['GSK-CYL-001'],
-      'created_at': '2026-05-26T09:15:00Z',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService();
+      final data = await api.getAlerts();
+      if (mounted) {
+        setState(() {
+          _alerts = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator(color: LogiSyncTheme.primary));
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: LogiSyncTheme.rose, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load alerts', style: TextStyle(color: LogiSyncTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: LogiSyncTheme.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() { _isLoading = true; _error = null; });
+                _loadData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LogiSyncTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final filtered = _filter == 'all'
         ? _alerts
         : _alerts.where((a) => a['status'] == _filter).toList();
@@ -138,18 +170,40 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
-  void _handleAction(String alertId, String action) {
-    setState(() {
-      final alert = _alerts.firstWhere((a) => a['id'] == alertId);
-      alert['status'] = action;
-    });
+  Future<void> _handleAction(String alertId, String action) async {
+    try {
+      final api = ApiService();
+      if (action == 'approved') {
+        await api.approveAlert(alertId);
+      } else {
+        await api.rejectAlert(alertId, 'Manager rejected from UI');
+      }
+      
+      setState(() {
+        final alertIndex = _alerts.indexWhere((a) => a['id'] == alertId);
+        if (alertIndex != -1) {
+          _alerts[alertIndex]['status'] = action;
+        }
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Alert ${action == 'approved' ? 'approved ✅' : 'rejected ❌'}'),
-        backgroundColor: action == 'approved' ? LogiSyncTheme.emerald : LogiSyncTheme.rose,
-      ),
-    );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Alert ${action == 'approved' ? 'approved ✅' : 'rejected ❌'}'),
+            backgroundColor: action == 'approved' ? LogiSyncTheme.emerald : LogiSyncTheme.rose,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update alert: $e'),
+            backgroundColor: LogiSyncTheme.rose,
+          ),
+        );
+      }
+    }
   }
 }
 

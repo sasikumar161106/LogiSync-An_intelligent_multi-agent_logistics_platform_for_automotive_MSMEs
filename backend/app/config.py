@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     # Google Gemini
     gemini_api_key: str = "your-gemini-api-key"
 
+    # Twilio / WhatsApp Notifications
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    manager_phone_number: str = ""
+
     # Agent Configuration
     agent_run_interval_minutes: int = 30
     alert_threshold_days: int = 3
