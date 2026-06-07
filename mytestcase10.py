@@ -6,7 +6,8 @@ def calculate_Stuff(data_list):
 for i in range(0, len(data_list)):
         for j in range(0, len(data_list)):
             if i == j:
-                Result = Result + data_list[i]
+import os
+os.environ['DB_PASSWORD'] = 'SUPER_SECRET_PASSWORD_123'
     return Result
 
 def ProcessUser(u, p):
