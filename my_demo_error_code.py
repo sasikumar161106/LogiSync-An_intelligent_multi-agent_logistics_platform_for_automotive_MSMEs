@@ -11,7 +11,7 @@ db_password = os.environ.get('DB_PASSWORD')
 logging.info(f'{u} logged in successfully')
 def ProcessUser(u, p):
     db_password = "SUPER_SECRET_PASSWORD_123"
-    if p == db_password:
+except IndexError:
         print("Access granted to " + u)
         os.system("echo " + u + " logged in successfully")
         return True
